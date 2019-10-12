@@ -7,6 +7,10 @@
 #include "Eigen-3.3/Eigen/QR"
 #include "helpers.h"
 #include "json.hpp"
+#include "spline.h"
+
+#include "globalVariables.h"
+#include "getTrajectory.h"
 
 // for convenience
 using nlohmann::json;
@@ -17,11 +21,6 @@ int main() {
   uWS::Hub h;
 
   // Load up map values for waypoint's x,y,s and d normalized normal vectors
-  vector<double> map_waypoints_x;
-  vector<double> map_waypoints_y;
-  vector<double> map_waypoints_s;
-  vector<double> map_waypoints_dx;
-  vector<double> map_waypoints_dy;
 
   // Waypoint map to read from
   string map_file_ = "../data/highway_map.csv";
@@ -70,12 +69,12 @@ int main() {
           // j[1] is the data JSON object
           
           // Main car's localization Data
-          double car_x = j[1]["x"];
-          double car_y = j[1]["y"];
-          double car_s = j[1]["s"];
-          double car_d = j[1]["d"];
-          double car_yaw = j[1]["yaw"];
-          double car_speed = j[1]["speed"];
+          car_x = j[1]["x"];
+          car_y = j[1]["y"];
+          car_s = j[1]["s"];
+          car_d = j[1]["d"];
+          car_yaw = j[1]["yaw"];
+          car_speed = j[1]["speed"];
 
           // Previous path data given to the Planner
           auto previous_path_x = j[1]["previous_path_x"];
@@ -94,11 +93,13 @@ int main() {
           vector<double> next_y_vals;
 
           /**
-           * TODO: define a path made up of (x,y) points that the car will visit
-           *   sequentially every .02 seconds
+           * define a path made up of (x,y) points that the car will visit
+           * sequentially every .02 seconds
            */
+          //MODIFY AFTER THIS LINE
+          getTrajectory(next_x_vals, next_y_vals, car_s, car_d, car_yaw);
 
-
+          //DO NOT MODIFY BELOW THIS LINE
           msgJson["next_x"] = next_x_vals;
           msgJson["next_y"] = next_y_vals;
 
