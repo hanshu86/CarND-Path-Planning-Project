@@ -11,7 +11,8 @@ using std::vector;
 
 //offset in waypoints
 vector<vector<double>> map_waypoints;
-vector<double> car_points;
+
 //offset in car variables
+vector<double> car_points;
 
 #endif // GLOBAL_VARIABLE_H
