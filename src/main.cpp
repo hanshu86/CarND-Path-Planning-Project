@@ -21,6 +21,11 @@ int main() {
   uWS::Hub h;
 
   // Load up map values for waypoint's x,y,s and d normalized normal vectors
+  vector<double> map_waypoints_x;
+  vector<double> map_waypoints_y;
+  vector<double> map_waypoints_s;
+  vector<double> map_waypoints_dx;
+  vector<double> map_waypoints_dy;
 
   // Waypoint map to read from
   string map_file_ = "../data/highway_map.csv";
@@ -49,6 +54,14 @@ int main() {
     map_waypoints_dy.push_back(d_y);
   }
 
+  //put it in vector
+  map_waypoints.clear();
+  map_waypoints.push_back(map_waypoints_x);
+  map_waypoints.push_back(map_waypoints_y);
+  map_waypoints.push_back(map_waypoints_s);
+  map_waypoints.push_back(map_waypoints_dx);
+  map_waypoints.push_back(map_waypoints_dy);
+
   h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,
                &map_waypoints_dx,&map_waypoints_dy]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
@@ -69,12 +82,20 @@ int main() {
           // j[1] is the data JSON object
           
           // Main car's localization Data
-          car_x = j[1]["x"];
-          car_y = j[1]["y"];
-          car_s = j[1]["s"];
-          car_d = j[1]["d"];
-          car_yaw = j[1]["yaw"];
-          car_speed = j[1]["speed"];
+          double car_x = j[1]["x"];
+          double car_y = j[1]["y"];
+          double car_s = j[1]["s"];
+          double car_d = j[1]["d"];
+          double car_yaw = j[1]["yaw"];
+          double car_speed = j[1]["speed"];
+
+          car_points.clear();
+          car_points.push_back(car_x);
+          car_points.push_back(car_y);
+          car_points.push_back(car_s);
+          car_points.push_back(car_d);
+          car_points.push_back(car_yaw);
+          car_points.push_back(car_speed);
 
           // Previous path data given to the Planner
           auto previous_path_x = j[1]["previous_path_x"];
@@ -97,7 +118,7 @@ int main() {
            * sequentially every .02 seconds
            */
           //MODIFY AFTER THIS LINE
-          getTrajectory(next_x_vals, next_y_vals, car_s, car_d, car_yaw);
+          getTrajectory(next_x_vals, next_y_vals, car_points, map_waypoints);
 
           //DO NOT MODIFY BELOW THIS LINE
           msgJson["next_x"] = next_x_vals;
