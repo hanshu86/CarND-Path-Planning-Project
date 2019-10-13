@@ -9,9 +9,6 @@
 #include "json.hpp"
 #include "spline.h"
 
-#include "globalVariables.h"
-#include "getTrajectory.h"
-
 // for convenience
 using nlohmann::json;
 using std::string;
@@ -57,14 +54,6 @@ int main() {
     map_waypoints_dy.push_back(d_y);
   }
 
-  //put it in vector
-  map_waypoints.clear();
-  map_waypoints.push_back(map_waypoints_x);
-  map_waypoints.push_back(map_waypoints_y);
-  map_waypoints.push_back(map_waypoints_s);
-  map_waypoints.push_back(map_waypoints_dx);
-  map_waypoints.push_back(map_waypoints_dy);
-
   h.onMessage([&map_waypoints_x,&map_waypoints_y,&map_waypoints_s,
                &map_waypoints_dx,&map_waypoints_dy]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
@@ -91,14 +80,6 @@ int main() {
           double car_d = j[1]["d"];
           double car_yaw = j[1]["yaw"];
           double car_speed = j[1]["speed"];
-
-          car_points.clear();
-          car_points.push_back(car_x);
-          car_points.push_back(car_y);
-          car_points.push_back(car_s);
-          car_points.push_back(car_d);
-          car_points.push_back(car_yaw);
-          car_points.push_back(car_speed);
 
           // Previous path data given to the Planner
           auto previous_path_x = j[1]["previous_path_x"];
@@ -255,7 +236,6 @@ int main() {
           //set (x,y) points to spline - anchor points
           spl.set_points(ptsx, ptsy);
 
-          // getTrajectory(next_x_vals, next_y_vals, car_points, map_waypoints);
           for(int i = 0; i < previous_path_x.size(); i++) {
             next_x_vals.push_back(previous_path_x[i]);
             next_y_vals.push_back(previous_path_y[i]);
