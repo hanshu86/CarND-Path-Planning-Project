@@ -17,6 +17,9 @@ using nlohmann::json;
 using std::string;
 using std::vector;
 
+static int lane = 1;//middle lane
+static double ref_velocity = 0.0;//mph
+
 int main() {
   uWS::Hub h;
 
@@ -97,17 +100,12 @@ int main() {
           car_points.push_back(car_yaw);
           car_points.push_back(car_speed);
 
-          int lane = 1;//middle lane
-          double ref_velocity = 49.5;//mph
           // Previous path data given to the Planner
           auto previous_path_x = j[1]["previous_path_x"];
           auto previous_path_y = j[1]["previous_path_y"];
           // Previous path's end s and d values 
           double end_path_s = j[1]["end_path_s"];
           double end_path_d = j[1]["end_path_d"];
-
-          //last path car was following
-          int prev_size = previous_path_x.size();
 
           // Sensor Fusion Data, a list of all other cars on the same side 
           //   of the road.
@@ -123,6 +121,42 @@ int main() {
            * sequentially every .02 seconds
            */
           //MODIFY AFTER THIS LINE
+
+          //last path car was following
+          int prev_size = previous_path_x.size();
+
+          if(prev_size > 0) {
+            car_s = end_path_s;
+          }
+
+          bool too_close = false;
+
+          //find reference velocity to use
+          for(int i = 0; i < sensor_fusion.size(); i++) {
+            //car is in my lane
+            float d = sensor_fusion[i][6];
+            if(d < (2+4*lane+2) && d > (2+4*lane-2)) {
+              double vx = sensor_fusion[i][3];
+              double vy = sensor_fusion[i][4];
+              double check_speed = sqrt(vx*vx+vy*vy);
+              double check_car_s = sensor_fusion[i][5];
+
+              check_car_s +=((double)prev_size*0.02*check_speed);
+
+              if((check_car_s > car_s) && ((check_car_s - car_s) < 30)) {
+                too_close = true;
+              }
+            }
+
+          }
+
+          if(too_close) {
+            ref_velocity -= 0.224;
+          }
+          else if(ref_velocity < 49.5) {
+                ref_velocity += 0.224;
+          }
+
           //create a list of widely spaced (x,y) waypoints, evenly spaced at 30m
           //later will be used by spline
           std::vector<double> ptsx;
@@ -171,14 +205,6 @@ int main() {
           ptsy.push_back(next_wp1[1]);
           ptsy.push_back(next_wp2[1]);
 
-          // std::cout << "Before transalation" << std::endl;
-
-          // for(int i = 0; i < ptsx.size(); i++) {
-          //   std::cout << ptsx[i] << " " ;
-          // }
-          // std::cout << "ref: " << ref_yaw << std::endl;
-
-          // std::cout << "After transalation" << std::endl;
           //now transalte x,y points to car
           for(int i = 0; i < ptsx.size(); i++) {
             //shift car refrence angle to zero
@@ -187,9 +213,8 @@ int main() {
 
             ptsx[i] = ((shift_x * cos(0 - ref_yaw)) - (shift_y * sin(0 - ref_yaw)));
             ptsy[i] = ((shift_x * sin(0 - ref_yaw)) + (shift_y * cos(0 - ref_yaw)));
-            // std::cout << ptsx[i] << " ";
           }
-          // std::cout << std::endl;
+
           //create a spline
           tk::spline spl;
 
