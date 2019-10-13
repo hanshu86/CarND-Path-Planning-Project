@@ -129,29 +129,63 @@ int main() {
             car_s = end_path_s;
           }
 
-          bool too_close = false;
-
+          bool too_close = false; // car ahead of me is within 30m
+          bool left_lane_safe = true; // car in left lane is in range of 30m (Default not safe)
+          bool right_lane_safe = true; // car in right lane is in range of 30m (Default not safe)
+          int right_lane_number = (lane + 1) >= 2 ? 2 : (lane + 1);
+          int left_lane_number = (lane - 1) >= 0 ? (lane - 1) : 0;
           //find reference velocity to use
+          //iterating through sensor fusion to see if there is car ahead
           for(int i = 0; i < sensor_fusion.size(); i++) {
-            //car is in my lane
+            //check other cars in my lane
             float d = sensor_fusion[i][6];
+            double vx = sensor_fusion[i][3];
+            double vy = sensor_fusion[i][4];
+            double check_speed = sqrt(vx*vx+vy*vy);
+            double check_car_s = sensor_fusion[i][5];
+            //other car position in future
+            check_car_s +=((double)prev_size*0.02*check_speed);
+            
             if(d < (2+4*lane+2) && d > (2+4*lane-2)) {
-              double vx = sensor_fusion[i][3];
-              double vy = sensor_fusion[i][4];
-              double check_speed = sqrt(vx*vx+vy*vy);
-              double check_car_s = sensor_fusion[i][5];
-
-              check_car_s +=((double)prev_size*0.02*check_speed);
 
               if((check_car_s > car_s) && ((check_car_s - car_s) < 30)) {
                 too_close = true;
               }
+            } //current lane check loop end
+
+            //check if there is car in safe range of left_lane
+            //only check if there is possibility of taking left lane change
+            if( lane > 0) {
+              //if other car in the loop is in left lane of our car
+              if ((d > ((lane - 1)*4)) && (d < (lane*4))) {
+                //absolute diff as we need to make sure that we have enough gap
+                //between car behind us and ahead of us in left lane
+                float diff = abs(check_car_s - car_s);
+                if(diff < 30) {
+                  left_lane_safe = false;
+                }
+              }
             }
 
-          }
+            if( lane < 2) {
+              //if other car in the loop is in left lane of our car
+              if ((d > ((lane + 1 )*4)) && (d < ((lane + 1)*4) + 4)) {
+                //absolute diff as we need to make sure that we have enough gap
+                //between car behind us and ahead of us in left lane
+                float diff = abs(check_car_s - car_s);
+                if(diff < 30) {
+                  right_lane_safe = false;
+                }
+              }
+            }
 
+          } //iterating through sensor fusion to see if there is car ahead loop end
+
+          //smooth acceleration - tune velocity in incremental mode
           if(too_close) {
             ref_velocity -= 0.224;
+            if(left_lane_safe && lane > 0) { lane = (lane - 1) >= 0 ? (lane - 1) : 0;}
+            else if(right_lane_safe) { lane = (lane + 1) >= 2 ? 2 : (lane + 1);}
           }
           else if(ref_velocity < 49.5) {
                 ref_velocity += 0.224;
